@@ -20,7 +20,7 @@ const ABI = [
   'event RaffleEnter(address indexed player)',
 ];
 
-const CONTRACT_ADDRESS = "0x3C0f221FF0Db8FD92A093870Cb348D124d97537c";
+const CONTRACT_ADDRESS = "0xdB9ED786cAF806b929C52eDC18a350eDAB9ADbfa";
 
 /* -------------------------- helpers -------------------------- */
 function formatAddress(addr) {
