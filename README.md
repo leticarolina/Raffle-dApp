@@ -7,7 +7,7 @@ This project demonstrates a full-stack Web3 workflow: secure smart contract deve
 
 ## 📸 Demo and Deployment
 
-- Smart Contract: [0x3C0f221FF0Db8FD92A093870Cb348D124d97537c](https://sepolia.etherscan.io/address/0x3C0f221FF0Db8FD92A093870Cb348D124d97537c)
+- Smart Contract: [0xdB9ED786cAF806b929C52eDC18a350eDAB9ADbfa](https://sepolia.etherscan.io/address/0xdB9ED786cAF806b929C52eDC18a350eDAB9ADbfa)
 
 - [Live Website](https://raffle-vrf-d-app.vercel.app/)  
 
