@@ -1,0 +1,24 @@
+-include .env # Load environment variables from env file
+.PHONY: all test clean deploy fund help install snapshot format anvil
+build:; forge build
+
+fork-sepolia:
+	forge test --fork-url $(SEPOLIA_URL)
+
+test:
+	forge test 
+
+forkFunction:
+	forge test --mt testTFunction --fork-url $(SEPOLIA_URL) -vvvv
+
+fork-coverage:
+	forge coverage --fork-url $(SEPOLIA_URL) 
+
+install: 
+	forge install Cyfrin/foundry-devops@0.4.0 --no-commit 
+	forge install smartcontractkit/chainlink@381285eba617615326ef28447fbfd8457ae3d14c --no-commit 
+	forge install foundry-rs/forge-std@v1.8.2 --no-commit 
+	forge install transmissions11/solmate@v6 --no-commit
+
+deploy:
+	forge script script/Deploy.s.sol:DeployScript --rpc-url $(SEPOLIA_URL) --private-key $(SEPOLIA_PK) --broadcast --verify 
