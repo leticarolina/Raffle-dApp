@@ -31,7 +31,6 @@ This project demonstrates a full-stack Web3 workflow: secure smart contract deve
   - Uses **Chainlink VRF** for a fair random winner selection
   - **Chainlink Automation** closes raffle, draws winners, and resets automatically  
   - Gas-optimized Solidity with **custom errors**, `constant` and `immutable` vars  
-  - `fallback` & `receive` functions to handle raw ETH transfers  
   - Assumes ETH transfer succeeds with `.call`.
 
 - **Frontend (React + Next.js)**
