@@ -286,6 +286,9 @@ export default function Home() {
             {/* Stats */}
             <div className="mt-6 grid md:grid-cols-2 gap-4 text-center">
               {/* <Stat label="Entrance fee" value={`${entranceFeeEth} ETH`} /> */}
+
+              <Stat label="Players" value={String(playersCount)} />
+              <Stat label="automation/draw interval" value={`${intervalMinutes} minutes`} />
               <Stat
                 label="Raffle status"
                 value={raffleStatusLabel({
@@ -294,8 +297,8 @@ export default function Home() {
                   // timeLeft: secondsRemaining,
                 })}
               />
-              <Stat label="Players" value={String(playersCount)} />
-              <Stat label="automation/draw interval" value={`${intervalMinutes} minutes`} />
+
+
               <Stat
                 label="Last winner"
                 value={
