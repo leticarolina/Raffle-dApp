@@ -61,16 +61,19 @@ export default function Home() {
   const [intervalMinutes, setIntervalMinutes] = useState(0);
   const [txStatus, setTxStatus] = useState(''); // Transaction status message
   // Refs to keep provider and read-only contract across renders
-  const providerRef = useRef(null);
+  // const providerRef = useRef(null);
+  const readProviderRef = useRef(null);
   const readOnlyContractRef = useRef(null);
+
 
   /* ---------------------- refresh data from blockchain ---------------------- */
   const refreshFromChain = useMemo(
     () => async () => {
       try {
         //set the provider and read-only contract if not already set
-        const provider =
-          providerRef.current ?? (providerRef.current = getReadProvider());
+        // const provider =
+        //   providerRef.current ?? (providerRef.current = getReadProvider());
+        const provider = readProviderRef.current ?? (readProviderRef.current = getReadProvider());
         const readOnlyContract =
           readOnlyContractRef.current ?? (readOnlyContractRef.current = getRaffleContract(provider));
 
@@ -113,9 +116,12 @@ export default function Home() {
     (async () => {
       try {
         // Ensure provider/contract singletons
-        const provider =
-          providerRef.current ?? (providerRef.current = await getEthersProvider());
-        readOnlyContractRef.current ??= getRaffleContract(provider);
+        // const provider =
+        //   providerRef.current ?? (providerRef.current = await getEthersProvider());
+        // readOnlyContractRef.current ??= getRaffleContract(provider);
+        const readProvider =
+          readProviderRef.current ?? (readProviderRef.current = getReadProvider());
+        readOnlyContractRef.current ??= getRaffleContract(readProvider);
 
         if (mounted) {
           await refreshFromChain(); // populate fee, players, last winner, etc.
@@ -134,12 +140,12 @@ export default function Home() {
 
     (async () => {
       try {
-        const provider =
-          providerRef.current ?? (providerRef.current = await getEthersProvider());
-
-        readOnlyContract =
-          readOnlyContractRef.current ?? (readOnlyContractRef.current = getRaffleContract(provider));
-
+        // const provider =
+        //   providerRef.current ?? (providerRef.current = await getEthersProvider());
+        const readProvider = readProviderRef.current ?? (readProviderRef.current = getReadProvider());
+        // readOnlyContract =
+        //   readOnlyContractRef.current ?? (readOnlyContractRef.current = getRaffleContract(provider));
+        readOnlyContract = readOnlyContractRef.current ?? (readOnlyContractRef.current = getRaffleContract(readProvider));
         // Immediate UI refresh when the raffle state transitions
         readOnlyContract.on('WinnerPicked', async () => {
           await refreshFromChain();
