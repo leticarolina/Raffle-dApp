@@ -21,19 +21,26 @@ const ABI = [
 ];
 
 const CONTRACT_ADDRESS = "0xdB9ED786cAF806b929C52eDC18a350eDAB9ADbfa";
-
+const PUBLIC_PROVIDER = "https://eth-sepolia.g.alchemy.com/v2/d6k6YyQm-UObQbgsOoj96"
 /* -------------------------- helpers -------------------------- */
 function formatAddress(addr) {
   if (!addr) return '';
   return `${addr.slice(0, 6)}…${addr.slice(-6)}`;
 }
 
+function getReadProvider() {
+  if (PUBLIC_PROVIDER) return new ethers.JsonRpcProvider(PUBLIC_PROVIDER);
+  return ethers.getDefaultProvider('sepolia'); // fallback 
+}
+
 //checking if wallet is installed on the browser
 async function getEthersProvider() {
-  if (window?.ethereum) {
-    return new ethers.BrowserProvider(window.ethereum);
-  }
-  return ethers.getDefaultProvider("using default provider");
+  // if (window?.ethereum) {
+  //   return new ethers.BrowserProvider(window.ethereum);
+  // }
+  // return ethers.getDefaultProvider("using default provider");
+  if (!window?.ethereum) throw new Error('No wallet found');
+  return new ethers.BrowserProvider(window.ethereum);
 }
 
 // Create a contract instance with both signer and provider
@@ -63,7 +70,7 @@ export default function Home() {
       try {
         //set the provider and read-only contract if not already set
         const provider =
-          providerRef.current ?? (providerRef.current = await getEthersProvider());
+          providerRef.current ?? (providerRef.current = getReadProvider());
         const readOnlyContract =
           readOnlyContractRef.current ?? (readOnlyContractRef.current = getRaffleContract(provider));
 
@@ -170,8 +177,11 @@ export default function Home() {
     try {
       //provider.send is the way to call RPC methods directly.
       // 'eth_requestAccounts' = standard Ethereum JSON-RPC method that asks the user’s wallet for permission to connect.
-      const provider =
-        providerRef.current ?? (providerRef.current = await getEthersProvider());
+      // const provider =
+      //   providerRef.current ?? (providerRef.current = await getEthersProvider());
+      // const accounts = await provider.send('eth_requestAccounts', []);
+      // setConnectedAccount(accounts?.[0] ?? null);
+      const provider = await getEthersProvider();
       const accounts = await provider.send('eth_requestAccounts', []);
       setConnectedAccount(accounts?.[0] ?? null);
     } catch (err) {
@@ -185,8 +195,11 @@ export default function Home() {
     try {
       setTxStatus('Connecting wallet…');
 
-      const provider =
-        providerRef.current ?? (providerRef.current = await getEthersProvider());
+      // const provider =
+      //   providerRef.current ?? (providerRef.current = await getEthersProvider());
+      // const signer = await provider.getSigner();
+
+      const provider = await getEthersProvider();
       const signer = await provider.getSigner();
       const contract = getRaffleContract(signer);
 
@@ -253,7 +266,7 @@ export default function Home() {
               rel="noopener noreferrer"
               className="text-s font-mono text-[#213555] hover:opacity-80"
             >
-              {CONTRACT_ADDRESS}
+              {`${CONTRACT_ADDRESS.slice(0, 10)}...${CONTRACT_ADDRESS.slice(-10)}`}
             </a>
           </div>
 
