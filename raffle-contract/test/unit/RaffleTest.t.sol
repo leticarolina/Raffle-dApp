@@ -119,6 +119,7 @@ contract RaffleTest is Test, CodeConstants, BaseTest {
         vm.expectRevert(Raffle.Raffle__NotEnoughEthSent.selector);
         raffle.enterRaffle{value: insufficienteFee}();
     }
+
     function test_enterRaffle_recordsPlayerInTheArray_whenTheyEnterRaffle()
         public
     {
@@ -130,6 +131,7 @@ contract RaffleTest is Test, CodeConstants, BaseTest {
         address playerRecorded = raffle.getPlayer(0);
         assertEq(playerRecorded, PLAYER);
     }
+
     function test_enterRaffle_emitsEvent_whenPlayerEntersRaffle() public {
         // Arrange
         vm.prank(PLAYER);
@@ -153,6 +155,7 @@ contract RaffleTest is Test, CodeConstants, BaseTest {
         //assert: upkeepNeeded should be false because the contract has no balance
         assert(!upkeepNeeded);
     }
+
     function test_checkUpkeep_returnsFalse_ifRaffleIsNotOpen()
         public
         raffleEnteredAndTimePassed
@@ -169,6 +172,7 @@ contract RaffleTest is Test, CodeConstants, BaseTest {
         assert(raffleState == Raffle.RaffleState.CALCULATING);
         assert(upkeepNeeded == false); // upkeepNeeded should be false because the raffle is not open anymore
     }
+
     function test_checkUpkeep_returnsFalse_ifNotEnoughTimeHasPassed()
         public
         raffleEntered
@@ -182,6 +186,7 @@ contract RaffleTest is Test, CodeConstants, BaseTest {
         //assert
         assert(upkeepNeeded == false);
     }
+
     function test_checkUpkeep_returnsTrue_whenAllConditionsAreMet()
         public
         raffleEnteredAndTimePassed
@@ -191,6 +196,7 @@ contract RaffleTest is Test, CodeConstants, BaseTest {
         (bool upkeepNeeded, ) = raffle.checkUpkeep("");
         assertEq(upkeepNeeded, true);
     }
+
     /*//////////////////////////////////////////////////////////////
                           PERFORM UPKEEP
     //////////////////////////////////////////////////////////////*/
@@ -203,6 +209,7 @@ contract RaffleTest is Test, CodeConstants, BaseTest {
         //upkeepNeeded should be true, so performUpkeep can be called
         raffle.performUpkeep("");
     }
+
     function test_performUpkeep_reverts_whenCheckUpkeepReturnsFalse() public {
         uint256 currentBalance = 0; // no one has entered the raffle yet, so balance is 0
         uint256 currentPlayers = 0; // no players have entered yet

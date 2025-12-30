@@ -21,4 +21,5 @@ install:
 	forge install transmissions11/solmate@v6 --no-commit
 
 deploy:
-	forge script script/Deploy.s.sol:DeployScript --rpc-url $(SEPOLIA_URL) --private-key $(SEPOLIA_PK) --broadcast --verify 
+	forge script script/DeployRaffle.s.sol:DeployRaffle --rpc-url $(SEPOLIA_URL) --private-key $(SEPOLIA_PK) --broadcast --verify 
+	forge script script/DeployRaffle.s.sol:DeployRaffle --rpc-url $SEPOLIA_URL --private-key $SEPOLIA_PK --broadcast --verify --etherscan-api-key 1VQIC4Z5DDHVH13H1C4YG8JWYJMR5ESZFN

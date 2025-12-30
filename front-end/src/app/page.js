@@ -21,30 +21,38 @@ const ABI = [
 ];
 
 const CONTRACT_ADDRESS = "0xdB9ED786cAF806b929C52eDC18a350eDAB9ADbfa";
-const PUBLIC_PROVIDER = "https://eth-sepolia.g.alchemy.com/v2/d6k6YyQm-UObQbgsOoj96"
+const PUBLIC_PROVIDER = "https://eth-sepolia.g.alchemy.com/v2/d6k6YyQm-UObQbgsOoj96" //own RPC to read chain state before a wallet connects
 /* -------------------------- helpers -------------------------- */
 function formatAddress(addr) {
   if (!addr) return '';
   return `${addr.slice(0, 6)}…${addr.slice(-6)}`;
 }
 
+//ethers.JsonRpcProvider class to connect an RPC endpoint (e.g., Alchemy/Infura) for read-only chain access.
+//class → need to new it to create an instance
+//Must match the network where contract is deployed.
+//ethers.getDefaultProvider() helper function It auto-creates a JsonRpcProvider using default public endpoints (Etherscan, Infura, etc.).
 function getReadProvider() {
   if (PUBLIC_PROVIDER) return new ethers.JsonRpcProvider(PUBLIC_PROVIDER);
   return ethers.getDefaultProvider('sepolia'); // fallback 
 }
 
-//checking if wallet is installed on the browser
+//This is for wallet-connected provider, checking if wallet is installed on the browser 
+//injected provider from wallet, which can return a Signer (so can send transactions).
+//async because BrowserProvider has async methods (getSigner(), etc.)
 async function getEthersProvider() {
   // if (window?.ethereum) {
   //   return new ethers.BrowserProvider(window.ethereum);
   // }
   // return ethers.getDefaultProvider("using default provider");
+  //window.ethereum = injected object from browser wallet extension. The bridge between dApp and the wallet
   if (!window?.ethereum) throw new Error('No wallet found');
   return new ethers.BrowserProvider(window.ethereum);
 }
 
 // Create a contract instance with both signer and provider
 function getRaffleContract(signerOrProvider) {
+  //ethers.Contract lets §§§§REGRGTapp interact with a deployed smart contract as if it were a JS object.
   return new ethers.Contract(CONTRACT_ADDRESS, ABI, signerOrProvider);
 }
 
@@ -61,30 +69,38 @@ export default function Home() {
   const [intervalMinutes, setIntervalMinutes] = useState(0);
   const [txStatus, setTxStatus] = useState(''); // Transaction status message
   // Refs to keep provider and read-only contract across renders
-  // const providerRef = useRef(null);
   const readProviderRef = useRef(null);
   const readOnlyContractRef = useRef(null);
 
 
   /* ---------------------- refresh data from blockchain ---------------------- */
+  //useMemo(() => async () => {...}, []) creates refreshFromChain once(stable reference)
+  //the returned value will be assigned to refreshFromChain variable,
+  //its result only changes when the dependency change, avoids unnecessary recalculation 
+  //i dont want refreshFromChain to be called on every re render bcs can slow down the dapp
   const refreshFromChain = useMemo(
     () => async () => {
       try {
         //set the provider and read-only contract if not already set
-        // const provider =
-        //   providerRef.current ?? (providerRef.current = getReadProvider());
+        //syntax if the left side is null or undefined ?? then use the right side
+        const check = "if i'm null/undefined" ?? "Then I will return instead"
+
+
         const provider = readProviderRef.current ?? (readProviderRef.current = getReadProvider());
         const readOnlyContract =
           readOnlyContractRef.current ?? (readOnlyContractRef.current = getRaffleContract(provider));
 
         // Pull everything from the contract in parallel
         const [
+          //Array destructuring into named variables in one shot, Order is preserved
           onChainPlayers,
           onChainContractBalance,
           onChainEntranceFee,
           onChainState,
           onChainInterval,
           onChainRecentWinner,
+          //Promise.all([...]) starts all 6 async calls in parallel and waits for all to finish.
+          //If any rejects → the whole Promise.all rejects.
         ] = await Promise.all([
           readOnlyContract.getNumberOfPlayers(),
           provider.getBalance(CONTRACT_ADDRESS),
@@ -106,6 +122,7 @@ export default function Home() {
       }
     },
     []
+    //The empty array [] to never re-creates the function, avoids re-subscribing to events or loops.
   );
 
   /* ----------------------  restore the state and set listeners ---------------------- */
@@ -115,10 +132,7 @@ export default function Home() {
 
     (async () => {
       try {
-        // Ensure provider/contract singletons
-        // const provider =
-        //   providerRef.current ?? (providerRef.current = await getEthersProvider());
-        // readOnlyContractRef.current ??= getRaffleContract(provider);
+        // Ensure provider/contract singletons = first run they’re created, later runs they’re reused.
         const readProvider =
           readProviderRef.current ?? (readProviderRef.current = getReadProvider());
         readOnlyContractRef.current ??= getRaffleContract(readProvider);
@@ -131,6 +145,8 @@ export default function Home() {
       }
     })();
 
+    //This doesn’t run immediately, It runs when either:Component unmounts, or Before this effect runs again(because refreshFromChain changed)
+    //Setting mounted = false makes sure that if the async work resolves after unmount, you won’t call setState on an unmounted component(which would throw a React warning).
     return () => { mounted = false; };
   }, [refreshFromChain]);
 
@@ -140,18 +156,18 @@ export default function Home() {
 
     (async () => {
       try {
-        // const provider =
-        //   providerRef.current ?? (providerRef.current = await getEthersProvider());
+        //Ensure a read provider and a read-only contract exist (reuse from refs)
         const readProvider = readProviderRef.current ?? (readProviderRef.current = getReadProvider());
-        // readOnlyContract =
-        //   readOnlyContractRef.current ?? (readOnlyContractRef.current = getRaffleContract(provider));
         readOnlyContract = readOnlyContractRef.current ?? (readOnlyContractRef.current = getRaffleContract(readProvider));
         // Immediate UI refresh when the raffle state transitions
+        //Register event listeners readOnlyContract.on(
         readOnlyContract.on('WinnerPicked', async () => {
           await refreshFromChain();
         });
 
         // Also nice to refresh when someone enters, or when request is made
+        //.on(eventName, listener) is from ethers.js Contract class.
+        //It registers an event listener: when the contract emits that event onchain,  callback runs.
         readOnlyContract.on('RaffleEnter', refreshFromChain);
         readOnlyContract.on('RequestedRaffleWinner', refreshFromChain);
       } catch (e) {
@@ -161,6 +177,9 @@ export default function Home() {
 
     return () => {
       //Before this effect runs again, remove old listeners.
+      //if readOnlyContract is not null/undefined, then access .removeAllListeners Otherwise → return undefined do nothing.
+      //Prevents runtime errors like Cannot read properties of undefined.
+      //remove those listeners so don’t accumulate duplicates or leak memory.
       if (readOnlyContract?.removeAllListeners) {
         readOnlyContract.removeAllListeners('WinnerPicked');
         readOnlyContract.removeAllListeners('RaffleEnter');
@@ -173,6 +192,7 @@ export default function Home() {
   useEffect(() => {
     if (!raffleIsOpen) {
       const id = setInterval(refreshFromChain, 2500); // fast while drawing
+      //Cleanup return function clears the interval
       return () => clearInterval(id);
     }
   }, [raffleIsOpen, refreshFromChain]);
@@ -188,10 +208,18 @@ export default function Home() {
       // const accounts = await provider.send('eth_requestAccounts', []);
       // setConnectedAccount(accounts?.[0] ?? null);
       const provider = await getEthersProvider();
+      //.send(method, params) is a low-level JSON-RPC call that ethers forwards to the underlying provider
+      //"eth_requestAccounts" is the standard RPC method MetaMask (and wallets) expose to request user accounts.
+      //empty [] means no extra parameters needed, It returns an array of addresses,
       const accounts = await provider.send('eth_requestAccounts', []);
+      //If accounts exists (is not null/undefined), take element 0.
+      //If accounts = [] → accounts?.[0] = undefined → fallback = null.
+      //If step accounts undefined (or null), replace with null.
       setConnectedAccount(accounts?.[0] ?? null);
     } catch (err) {
       console.error(err);
+      //chain of nullish coalescing.
+      //First try err.shortMessage, that’s null or undefined, try err.message, If that’s also missing, use 'Failed to connect wallet'
       setTxStatus(err.shortMessage ?? err.message ?? 'Failed to connect wallet');
     }
   };
@@ -199,30 +227,47 @@ export default function Home() {
   const enterRaffle = async () => {
     if (!connectedAccount) return;
     try {
-      setTxStatus('Connecting wallet…');
 
-      // const provider =
-      //   providerRef.current ?? (providerRef.current = await getEthersProvider());
-      // const signer = await provider.getSigner();
+      setTxStatus('Switching to Sepolia…');
 
+      if (window.ethereum) {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0xaa36a7' }], // 11155111 in hex
+        });
+      }
+
+      //connects to the wallet in the browser, gives access to the blockchain through the user’s wallet (MetaMask, etc.).
       const provider = await getEthersProvider();
+
+      //the signer represents the connected account (the wallet’s private key is held by MetaMask).
+      //we don’t get the raw private key — instead, the signer can sign transactions/messages on behalf of the user.
       const signer = await provider.getSigner();
+
+      //Wraps contract ABI + address with the signer, so any “write” function (like enterRaffle) will be signed and sent by signer wallet.
       const contract = getRaffleContract(signer);
 
       const feeWei = await contract.getEntranceFee();
 
       setTxStatus('Sending transaction…');
+      //Returns a transaction object (tx) with info like hash, chainId, etc.
       const tx = await contract.enterRaffle({ value: feeWei });
-      setTxStatus(`Pending: ${tx.hash}`);
-      const receipt = await tx.wait();
-      setTxStatus(`Confirmed in block ${receipt.blockNumber}`);
 
+      setTxStatus(`Pending: ${tx.hash}`);
+      //.wait() tells ethers: “Wait until this transaction is mined and confirmed in a block.”
+      //Returns a receipt object: blockNumber ,status(success / failure), gasUsed, etc.
+      //Without.wait(): you just know the tx hash was sent. With.wait(): you know it actually landed in the blockchain.
+      const receipt = await tx.wait();
+      setTxStatus(`Confirmed in block ${receipt.blockNumber}, Hash ${tx.hash}`);
+
+      //then after enter enraffle Pulls updated state: players count, balance, recent winner, 
       await refreshFromChain();
     } catch (err) {
       setTxStatus('Raffle is drawing a winner. Please wait and try again.');
     }
 
   };
+
 
   /* -------------------------- Raffle status label -------------------------- */
   function raffleStatusLabel({ isOpen, playersCount }) {
@@ -313,7 +358,6 @@ export default function Home() {
                 value={raffleStatusLabel({
                   isOpen: raffleIsOpen,
                   playersCount,
-                  // timeLeft: secondsRemaining,
                 })}
               />
 
@@ -321,6 +365,7 @@ export default function Home() {
               <Stat
                 label="Last winner"
                 value={
+                  //If both are true, run formatAddress(recentWinner
                   recentWinner && recentWinner !== ethers.ZeroAddress
                     ? formatAddress(recentWinner)
                     : '-'
