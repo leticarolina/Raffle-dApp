@@ -76,10 +76,7 @@ contract Integration is Test, CodeConstants, BaseTest {
     //////////////////////////////////////////////////////////////*/
 
     // it checks the event emitted by performUpkeep and using vm.recordLogs() to get the requestId
-    function test_performUpkeep_UpdateStateToCalculatingAndEmitsRequestId()
-        public
-        raffleEnteredAndTimePassed
-    {
+    function test_performUpkeep_UpdateStateToCalculatingAndEmitsRequestId() public raffleEnteredAndTimePassed {
         // Arrange: raffleEnteredAndTimePassed
 
         // Act
@@ -92,10 +89,7 @@ contract Integration is Test, CodeConstants, BaseTest {
         //Why entries[1]? Because the first log (entries[0]) is usually from the VRF mock (RandomWordsRequested), and the second log (entries[1]) is from my contract (RequestedRaffleWinner).
 
         //I have created a helper function in BaseTest.sol to find the requestId from the logs instead topics[1]
-        uint256 lastEntryRequestId = _findVRFRequestIdFromCoordinatorLogs(
-            entries,
-            raffle.getVrfCoordinator()
-        );
+        uint256 lastEntryRequestId = _findVRFRequestIdFromCoordinatorLogs(entries, raffle.getVrfCoordinator());
 
         // Assert
         Raffle.RaffleState raffleState = raffle.getRaffleState(); // get the new raffle state
@@ -107,35 +101,24 @@ contract Integration is Test, CodeConstants, BaseTest {
                           FULFILL RANDOM WORDS
     //////////////////////////////////////////////////////////////*/
 
-    function test_fulfillRandomWords_canOnlyBeCalledAfterPerformUpkeep()
-        public
-        raffleEnteredAndTimePassed
-        onlyLocal
-    {
+    function test_fulfillRandomWords_canOnlyBeCalledAfterPerformUpkeep() public raffleEnteredAndTimePassed onlyLocal {
         //this is using a manually generated random requestId
         //A valid requestId exists only after raffle calls performUpkeep() and the coordinator accepts the request.
         //testing that fulfillRandomWords() can only be called after performUpkeep() has been called, and performUpkeep() has not been called yet
         vm.expectRevert(VRFCoordinatorV2_5Mock.InvalidRequest.selector);
-        VRFCoordinatorV2_5Mock(vrfCoordinator).fulfillRandomWords(
-            0, ///this is using a random requestId, fuzzing the input
-            address(raffle) // consumer address
-        );
+        VRFCoordinatorV2_5Mock(vrfCoordinator)
+            .fulfillRandomWords(
+                0, ///this is using a random requestId, fuzzing the input
+                address(raffle) // consumer address
+            );
     }
 
-    function test_fulfillRandomWords_pickAWinner_resetStates_andTransferPrize()
-        public
-        raffleEntered
-        onlyLocal
-    {
+    function test_fulfillRandomWords_pickAWinner_resetStates_andTransferPrize() public raffleEntered onlyLocal {
         // Arrange
         address expectedWinner = address(1);
         uint256 additionalEntrants = 3; //4 players in total
         uint256 startingIndex = 1; // start from index 1 because index 0 is the PLAYER
-        for (
-            uint256 i = startingIndex;
-            i < startingIndex + additionalEntrants;
-            i++
-        ) {
+        for (uint256 i = startingIndex; i < startingIndex + additionalEntrants; i++) {
             address player = address(uint160(i)); //create a new player address and convert it to address type
             hoax(player, STARTING_BALANCE); //hoax will send 10 ether to each player address
             raffle.enterRaffle{value: entranceFee}(); // each player enters the raffle
@@ -151,24 +134,17 @@ contract Integration is Test, CodeConstants, BaseTest {
             address coord = raffle.getVrfCoordinator();
             uint256 subId = raffle.getSubscriptionId();
 
-            (uint96 linkBal, , , , ) = VRFCoordinatorV2_5Mock(coord)
-                .getSubscription(subId);
+            (uint96 linkBal,,,,) = VRFCoordinatorV2_5Mock(coord).getSubscription(subId);
             assertGt(linkBal, 0, "balance is zero");
         }
 
         vm.recordLogs();
         raffle.performUpkeep(""); // emits the event RequestedRaffleWinner(requestId)
         Vm.Log[] memory logs = vm.getRecordedLogs();
-        uint256 requestId = _findVRFRequestIdFromCoordinatorLogs(
-            logs,
-            raffle.getVrfCoordinator()
-        );
+        uint256 requestId = _findVRFRequestIdFromCoordinatorLogs(logs, raffle.getVrfCoordinator());
 
         // Pretend to be Chainlink VRF
-        VRFCoordinatorV2_5Mock(vrfCoordinator).fulfillRandomWords(
-            uint256(requestId),
-            address(raffle)
-        );
+        VRFCoordinatorV2_5Mock(vrfCoordinator).fulfillRandomWords(uint256(requestId), address(raffle));
 
         // Assert
         Raffle.RaffleState raffleState = raffle.getRaffleState();
@@ -185,10 +161,7 @@ contract Integration is Test, CodeConstants, BaseTest {
         assert(playersLength == 0); // players array should be reset
     }
 
-    function test_fulfillRandomWords_reverts_whenWinnerRejectsPrize()
-        public
-        onlyLocal
-    {
+    function test_fulfillRandomWords_reverts_whenWinnerRejectsPrize() public onlyLocal {
         WinnerCannotReceiveEth winner = new WinnerCannotReceiveEth();
 
         // Enter ONLY the unavailable winner so they’re index 0
@@ -201,21 +174,11 @@ contract Integration is Test, CodeConstants, BaseTest {
         vm.recordLogs();
         raffle.performUpkeep("");
         Vm.Log[] memory logs = vm.getRecordedLogs();
-        uint256 requestId = _findVRFRequestIdFromCoordinatorLogs(
-            logs,
-            raffle.getVrfCoordinator()
-        );
+        uint256 requestId = _findVRFRequestIdFromCoordinatorLogs(logs, raffle.getVrfCoordinator());
 
-        VRFCoordinatorV2_5Mock(raffle.getVrfCoordinator()).fulfillRandomWords(
-            requestId,
-            address(raffle)
-        );
+        VRFCoordinatorV2_5Mock(raffle.getVrfCoordinator()).fulfillRandomWords(requestId, address(raffle));
 
         // payout failed -> raffle stayed CALCULATING
-        assertEq(
-            uint256(raffle.getRaffleState()),
-            1,
-            "should remain CALCULATING"
-        );
+        assertEq(uint256(raffle.getRaffleState()), 1, "should remain CALCULATING");
     }
 }

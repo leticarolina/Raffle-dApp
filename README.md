@@ -46,9 +46,9 @@ This project demonstrates a full-stack Web3 workflow: secure smart contract deve
 
 ## 🛠️ Tech Stack
 
-- **Smart Contracts**: Solidity (0.8.x) with Foundry  
+- **Smart Contracts**: Solidity (0.8.19) with Foundry  
 - **Frontend**: Next.js (App Router) + React + TailwindCSS  
-- **Web3 Libraries**: wagmi + viem  
+- **Web3 Libraries**: ethers.js (v6)
 - **Oracles**: Chainlink VRF v2.5, Chainlink Automation  
 - **Local Dev/Test**: Anvil (Foundry)  
 

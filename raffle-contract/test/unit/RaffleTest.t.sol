@@ -81,20 +81,14 @@ contract RaffleTest is Test, CodeConstants, BaseTest {
     //test_<unitUnderTest>_<stateOrCondition>_<expectedOutcome/Behaviour>
 
     /*//////////////////////////////////////////////////////////////
-                           ENTER RAFFLE 
+                           ENTER RAFFLE
     //////////////////////////////////////////////////////////////*/
     function test_enterRaffle_RaffleStartsOpenState() public view {
         // Check that the raffle state is OPEN or basically the number 0, calculating refers to the number 1
-        assertEq(
-            uint256(raffle.getRaffleState()),
-            uint256(Raffle.RaffleState.OPEN)
-        );
+        assertEq(uint256(raffle.getRaffleState()), uint256(Raffle.RaffleState.OPEN));
     }
 
-    function test_enterRaffle_reverts_whenRaffleStateIsCalculating()
-        public
-        raffleEnteredAndTimePassed
-    {
+    function test_enterRaffle_reverts_whenRaffleStateIsCalculating() public raffleEnteredAndTimePassed {
         // after the player enters the raffle and time has passed, the raffle state should be CALCULATING
         raffle.performUpkeep(""); // this should flip state to CALCULATING
 
@@ -110,9 +104,7 @@ contract RaffleTest is Test, CodeConstants, BaseTest {
         raffle.enterRaffle(); //player tries to enter without sending the entrance fee
     }
 
-    function test_enterRaffle_reverts_whenPlayerEntersWithInsufficientFee()
-        public
-    {
+    function test_enterRaffle_reverts_whenPlayerEntersWithInsufficientFee() public {
         uint256 insufficienteFee = entranceFee - 0.005 ether;
 
         vm.prank(PLAYER);
@@ -120,9 +112,7 @@ contract RaffleTest is Test, CodeConstants, BaseTest {
         raffle.enterRaffle{value: insufficienteFee}();
     }
 
-    function test_enterRaffle_recordsPlayerInTheArray_whenTheyEnterRaffle()
-        public
-    {
+    function test_enterRaffle_recordsPlayerInTheArray_whenTheyEnterRaffle() public {
         //arrange
         vm.prank(PLAYER);
         //act
@@ -144,66 +134,52 @@ contract RaffleTest is Test, CodeConstants, BaseTest {
     /*//////////////////////////////////////////////////////////////
                            CHECK UPKEEP
     //////////////////////////////////////////////////////////////*/
-    function test_checkUpkeep_returnsFalse_ifContractHasNoBalanceOrPlayers()
-        public
-    {
+    function test_checkUpkeep_returnsFalse_ifContractHasNoBalanceOrPlayers() public {
         //arrange: assume the time has passed but no one has entered the raffle yet
         vm.warp(block.timestamp + interval + 1);
         vm.roll(block.number + 1);
         //act: checkUpkeep() is called by the Chainlink Keeper to check if upkeep is needed
-        (bool upkeepNeeded, ) = raffle.checkUpkeep("");
+        (bool upkeepNeeded,) = raffle.checkUpkeep("");
         //assert: upkeepNeeded should be false because the contract has no balance
         assert(!upkeepNeeded);
     }
 
-    function test_checkUpkeep_returnsFalse_ifRaffleIsNotOpen()
-        public
-        raffleEnteredAndTimePassed
-    {
+    function test_checkUpkeep_returnsFalse_ifRaffleIsNotOpen() public raffleEnteredAndTimePassed {
         // arrange: raffleEnteredAndTimePassed
         raffle.performUpkeep(""); // making it switch to CALCULATING state
         Raffle.RaffleState raffleState = raffle.getRaffleState(); // state should be: 1, CALCULATING
         //Enums belong to the contract where they’re declared, if want to reference an enum type/value from outside, must prefix it with the contract name not the instance name
 
         // Act
-        (bool upkeepNeeded, ) = raffle.checkUpkeep(""); // checkUpkeep() is called by the Chainlink Keeper to check if upkeep is needed
+        (bool upkeepNeeded,) = raffle.checkUpkeep(""); // checkUpkeep() is called by the Chainlink Keeper to check if upkeep is needed
 
         // Assert
         assert(raffleState == Raffle.RaffleState.CALCULATING);
         assert(upkeepNeeded == false); // upkeepNeeded should be false because the raffle is not open anymore
     }
 
-    function test_checkUpkeep_returnsFalse_ifNotEnoughTimeHasPassed()
-        public
-        raffleEntered
-    {
+    function test_checkUpkeep_returnsFalse_ifNotEnoughTimeHasPassed() public raffleEntered {
         //arrange - raffleEntered modifier
         skip(29); // skips only 29 seconds, so not enough time has passed
 
         //act - call checkUpkeep() to make sure it returns false
-        (bool upkeepNeeded, ) = raffle.checkUpkeep("");
+        (bool upkeepNeeded,) = raffle.checkUpkeep("");
 
         //assert
         assert(upkeepNeeded == false);
     }
 
-    function test_checkUpkeep_returnsTrue_whenAllConditionsAreMet()
-        public
-        raffleEnteredAndTimePassed
-    {
+    function test_checkUpkeep_returnsTrue_whenAllConditionsAreMet() public raffleEnteredAndTimePassed {
         //arrange - raffleEnteredAndTimePassed
 
-        (bool upkeepNeeded, ) = raffle.checkUpkeep("");
+        (bool upkeepNeeded,) = raffle.checkUpkeep("");
         assertEq(upkeepNeeded, true);
     }
 
     /*//////////////////////////////////////////////////////////////
                           PERFORM UPKEEP
     //////////////////////////////////////////////////////////////*/
-    function test_performUpkeep_canOnlyRun_whenCheckUpkeepReturnsTrue()
-        public
-        raffleEnteredAndTimePassed
-    {
+    function test_performUpkeep_canOnlyRun_whenCheckUpkeepReturnsTrue() public raffleEnteredAndTimePassed {
         // Arrange: raffleEnteredAndTimePassed
 
         //upkeepNeeded should be true, so performUpkeep can be called
@@ -229,10 +205,7 @@ contract RaffleTest is Test, CodeConstants, BaseTest {
     /*//////////////////////////////////////////////////////////////
                         getTimeUntilNextDraw
     //////////////////////////////////////////////////////////////*/
-    function test_getTimeUntilNextDraw_returnsPositive_beforeInterval()
-        public
-        view
-    {
+    function test_getTimeUntilNextDraw_returnsPositive_beforeInterval() public view {
         // Fresh deployment starts OPEN, lastTimeStamp=block.timestamp
         uint256 remainingTime = raffle.getTimeUntilNextDraw();
         assertGt(remainingTime, 0); // just deployed, interval not passed yet

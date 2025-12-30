@@ -47,16 +47,11 @@ contract HelperConfig is CodeConstants, Script {
         return getConfigByChainId(block.chainid);
     }
 
-    function setConfig(
-        uint256 chainId,
-        NetworkConfig memory networkConfig
-    ) public {
+    function setConfig(uint256 chainId, NetworkConfig memory networkConfig) public {
         networkConfigs[chainId] = networkConfig;
     }
 
-    function getConfigByChainId(
-        uint256 chainId
-    ) public returns (NetworkConfig memory) {
+    function getConfigByChainId(uint256 chainId) public returns (NetworkConfig memory) {
         if (networkConfigs[chainId].vrfCoordinator != address(0)) {
             return networkConfigs[chainId];
         } else if (chainId == LOCAL_CHAIN_ID) {
@@ -67,18 +62,17 @@ contract HelperConfig is CodeConstants, Script {
     }
 
     function getSepoliaEthConfig() public view returns (NetworkConfig memory) {
-        return
-            NetworkConfig({
-                entranceFee: 0.001 ether, // 0.001 ETH
-                interval: 120, //  2 minutes
-                vrfCoordinator: 0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B, //this value is the address of the VRFCoordinatorV2Plus contract on Sepolia
-                keyHash: 0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae, //this is the keyhash aka gas lane for Sepolia
-                callbackGasLimit: 100_000,
-                subscriptionId: 83748736775644622086624080657261491749307570282061869166533472615217857914701, //59348555989737605849604285057428249510813332769843048132307428824801730465258, // Subscription ID for Sepolia, provided by Chainlink
-                token: 0x779877A7B0D9E8603169DdbD7836e478b4624789, // Sepolia ETH token address,
-                account: vm.envUint("SEPOLIA_PK"), // Optional, can be used for native token payments,
-                useNativePayment: true // Use native payment for VRF requests
-            });
+        return NetworkConfig({
+            entranceFee: 0.001 ether, // 0.001 ETH
+            interval: 120, //  2 minutes
+            vrfCoordinator: 0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B, //this value is the address of the VRFCoordinatorV2Plus contract on Sepolia
+            keyHash: 0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae, //this is the keyhash aka gas lane for Sepolia
+            callbackGasLimit: 100_000,
+            subscriptionId: 83748736775644622086624080657261491749307570282061869166533472615217857914701, //59348555989737605849604285057428249510813332769843048132307428824801730465258, // Subscription ID for Sepolia, provided by Chainlink
+            token: 0x779877A7B0D9E8603169DdbD7836e478b4624789, // Sepolia ETH token address,
+            account: vm.envUint("SEPOLIA_PK"), // Optional, can be used for native token payments,
+            useNativePayment: true // Use native payment for VRF requests
+        });
     }
 
     function getOrCreateAnvilEthConfig() public returns (NetworkConfig memory) {
@@ -90,11 +84,8 @@ contract HelperConfig is CodeConstants, Script {
 
         // If not, create a new mock VRFCoordinator and return the config.
         vm.startBroadcast(DEFAULT_ANVIL_PRIVATE_KEY);
-        VRFCoordinatorV2_5Mock vrfCoordinatorMock = new VRFCoordinatorV2_5Mock(
-            MOCK_BASE_FEE,
-            MOCK_GAS_PRICE,
-            MOCK_WEI_PER_UNIT_LINK
-        );
+        VRFCoordinatorV2_5Mock vrfCoordinatorMock =
+            new VRFCoordinatorV2_5Mock(MOCK_BASE_FEE, MOCK_GAS_PRICE, MOCK_WEI_PER_UNIT_LINK);
 
         LinkToken linkToken = new LinkToken();
 

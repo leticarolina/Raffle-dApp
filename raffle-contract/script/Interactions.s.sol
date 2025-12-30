@@ -14,21 +14,15 @@ import {DevOpsTools} from "../lib/foundry-devops/src/DevOpsTools.sol";
 contract CreateSubscription is Script {
     function createSubscriptionUsingConfig() public returns (uint256, address) {
         HelperConfig helperConfig = new HelperConfig(); //deploying a new instance of the HelperConfig contract in the script environment
-        uint256 account = helperConfig
-            .getConfigByChainId(block.chainid)
-            .account; // get the account from the config
+        uint256 account = helperConfig.getConfigByChainId(block.chainid).account; // get the account from the config
         address vrfCoordinator = helperConfig.getConfig().vrfCoordinator; // calling the getConfig() function from the helperConfig instance, which returns a NetworkConfig struct with all your network-specific settings (entranceFee, interval, etc).
 
         return createSubscription(vrfCoordinator, account); // return the subscription ID and VRF Coordinator address
     }
 
-    function createSubscription(
-        address vrfCoordinator,
-        uint256 account
-    ) public returns (uint256, address) {
+    function createSubscription(address vrfCoordinator, uint256 account) public returns (uint256, address) {
         vm.startBroadcast(account);
-        uint256 subId = VRFCoordinatorV2_5Mock(vrfCoordinator)
-            .createSubscription();
+        uint256 subId = VRFCoordinatorV2_5Mock(vrfCoordinator).createSubscription();
         vm.stopBroadcast();
 
         return (subId, vrfCoordinator);
@@ -64,28 +58,19 @@ contract FundSubscription is Script {
         fundSubscription(vrfCoordinator, subscriptionId, linkToken, account);
     }
 
-    function fundSubscription(
-        address vrfCoordinator,
-        uint256 subscriptionId,
-        address linkToken,
-        uint256 account
-    ) public payable {
+    function fundSubscription(address vrfCoordinator, uint256 subscriptionId, address linkToken, uint256 account)
+        public
+        payable
+    {
         if (block.chainid == 31337) {
             vm.startBroadcast(account);
 
-            VRFCoordinatorV2_5Mock(vrfCoordinator).fundSubscription(
-                subscriptionId,
-                FUND_AMOUNT
-            );
+            VRFCoordinatorV2_5Mock(vrfCoordinator).fundSubscription(subscriptionId, FUND_AMOUNT);
 
             vm.stopBroadcast();
         } else {
             vm.startBroadcast();
-            LinkToken(linkToken).transferAndCall(
-                vrfCoordinator,
-                FUND_AMOUNT,
-                abi.encode(subscriptionId)
-            );
+            LinkToken(linkToken).transferAndCall(vrfCoordinator, FUND_AMOUNT, abi.encode(subscriptionId));
             vm.stopBroadcast();
         }
     }
@@ -100,17 +85,9 @@ contract FundSubscription is Script {
     //////////////////////////////////////////////////////////////*/
 // This script is used to add a consumer to the Chainlink VRF subscription
 contract AddConsumer is Script {
-    function addConsumer(
-        address raffle,
-        address vrfCoordinator,
-        uint256 subscriptionId,
-        uint256 account
-    ) public {
+    function addConsumer(address raffle, address vrfCoordinator, uint256 subscriptionId, uint256 account) public {
         vm.startBroadcast(account);
-        VRFCoordinatorV2_5Mock(vrfCoordinator).addConsumer(
-            subscriptionId,
-            raffle
-        );
+        VRFCoordinatorV2_5Mock(vrfCoordinator).addConsumer(subscriptionId, raffle);
         vm.stopBroadcast();
     }
 
@@ -124,10 +101,7 @@ contract AddConsumer is Script {
     }
 
     function run() external {
-        address raffle = DevOpsTools.get_most_recent_deployment(
-            "Raffle",
-            block.chainid
-        );
+        address raffle = DevOpsTools.get_most_recent_deployment("Raffle", block.chainid);
         addConsumerUsingConfig(raffle);
     }
 }
